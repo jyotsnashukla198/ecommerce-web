@@ -1,6 +1,4 @@
-import { Pool } from "pg";
-
-const pool = new Pool({connectionString:process.env.DATABASE_URL});
+import pool from "@/lib/db";
 
 export async function GET(req) {
 try{
@@ -35,4 +33,19 @@ export async function DELETE(req){
       console.log("Cart delete error:",error);
       return Response.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+export async function PATCH(req){
+    try{
+      const {searchParams} = new URL(req.url);
+      const user_id  = searchParams.get("id");
+      const squid = searchParams.get("squid");
+      const quantity = searchParams.get("quantity"); 
+      await pool.query(
+        "UPDATE usersCart SET item = jsonb_set(item, '{quantity}', $3::jsonb) WHERE id = $1 AND item->>'squid' = $2",
+        [user_id, squid, quantity]
+      );
+      return Response.json({message:"Item updated"});
+    }catch(error){
+        console.error("Cart Update Error",error);
+    }
 }

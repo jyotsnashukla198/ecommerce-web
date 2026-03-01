@@ -13,11 +13,30 @@ export default function CartPage(){
             method: "DELETE",
         })
     }
+    async function updateItemFromDB(squid,quantity){
+        await fetch(`/api/cartproducts?id=${user.id}&squid=${squid}&quantity=${quantity}`,{
+            method: "PATCH",
+        })
+    }
+    async function updateCart(squid,quantity){
+      if(quantity == 0){
+        removeItem(squid);
+      }else if(quantity>0){
+        updateItemFromDB(squid,quantity);
+        const updatedCart = cart.map((item)=>{
+            if(item.squid === squid){
+                item.quantity = quantity;
+            }
+            return item;
+        });
+        setCart(updatedCart);
+      }
+    }
     async function removeItem(id){
-     console.log(id);
+     console.log("removing item:", id);
      const updatedCart = cart.filter((item)=>item.squid!=id);
+     setCart(updatedCart);
      removeItemFromDB(id);
-     setCart(updatedCart);    
     }
     useEffect(() => {
     async function getProducts(user){
@@ -66,16 +85,16 @@ export default function CartPage(){
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">−</button>
+                    <button onClick={() => updateCart(item?.squid,item.quantity-1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">−</button>
                     <span className="text-sm font-medium text-black dark:text-white w-5 text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">+</button>
+                    <button onClick={() =>  updateCart(item?.squid,item.quantity+1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">+</button>
                   </div>
 
                   <p className="text-base font-semibold text-black dark:text-white w-20 text-right">
                     ${item.price}
                   </p>
 
-                  <button onClick={() => removeItem(item?.squid)} className="text-zinc-400 hover:text-red-500 transition-colors text-sm">
+                  <button onClick={() => removeItem(item?.id)} className="text-zinc-400 hover:text-red-500 transition-colors text-sm">
                     Remove
                   </button>
                 </div>

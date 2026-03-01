@@ -18,7 +18,13 @@
     --foreground: #ededed;
   }
 }
-
+@layer utilities {
+  .cart-badge {
+    text-align: center;
+    margin-bottom: 10px;
+    vertical-align: super;
+  }
+}
 body {
   background: var(--background);
   color: var(--foreground);

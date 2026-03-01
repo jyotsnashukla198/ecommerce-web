@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import {useRouter} from "next/navigation";
   
   
 export default function ProductsPage(){
@@ -7,6 +8,7 @@ export default function ProductsPage(){
   const[cart,setCart] = useState([]);
   const[added,setAdded] = useState({});
   const [user,setUser] = useState(null);
+  const router = useRouter();
   useEffect(()=>{
     const saved = localStorage.getItem("cart");
     if(saved){
@@ -24,14 +26,20 @@ export default function ProductsPage(){
   function addToCart(product){
     try{
      const existing = cart.find((item)=>{
-       return item?.id === product?.id;
+       return item?.squid === product?.squid;
      })
      let updatedCart;
      if(existing){
-      updatedCart = cart.map((item)=>
-        item?.id === product.id ? {...item, quantity: item.quantity + 1} : item
+      updatedCart = cart.map((item)=>{
+        if(item?.squid === product.squid){
+          product.quantity = product?.quantity+1;
+          item.quantity = item.quantity+1;
+        }
+        return item;
+      }
       );
     }else{
+      product.quantity = 1;
       updatedCart = [...cart,{quantity:1,...product}]
     }
     setCart(updatedCart);
@@ -59,10 +67,18 @@ export default function ProductsPage(){
       console.log(data);
       setProducts(data);
     }
+    async function getProducts(user){
+      const res = await fetch(`/api/cartproducts?id=${user.id}&email=${user.email}`);
+      const data = await res.json();
+      console.log(data);
+      let products=data.map((user)=>user.item);
+      setCart(products);
+  }
     async function checkAuth(){
       const res = await fetch("/api/auth/me");
       const data = await res.json();
       setUser(data.user);
+      getProducts(data.user);
     }
     checkAuth();
     fetchProducts();
@@ -76,11 +92,13 @@ export default function ProductsPage(){
             )}
              <h1 className="text-3xl font-semibold text-black dark:text-white mb-8">All Products</h1>
              <div className="flex items-center gap-2">
+              <a href="/cart">
              Cart {
-              totalItems>0 && (<span className="bg-black text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              totalItems>0 && (<span className="cart-badge bg-black text-white text-xs font-bold rounded-full w-5 h-5 inline-flex items-center justify-center">
                 {totalItems}
               </span>)
              }
+             </a>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((product) => (
@@ -89,10 +107,12 @@ export default function ProductsPage(){
             className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-md transition-shadow"
           >
             <div className="p-4">
-              <span className="text-xs text-zinc-500 uppercase tracking-wide">{product.brand}</span>
-              <h2 className="text-lg font-medium text-black dark:text-white mt-1">{product.model}</h2>
-              <span className="text-xs text-zinc-500 uppercase tracking-wide">{product.ram_gb} gb</span>
-              <div className="text-xs text-zinc-500 uppercase tracking-wide">{product.color}</div>
+              <div  onClick={() => router.push(`/products/${product.squid}`)} className="text-lg font-medium text-black dark:text-white mt-1 cursor-pointer hover:underline">
+                <span className="text-xs text-zinc-500 uppercase tracking-wide">{product.brand}</span>
+                <h2 className="text-lg font-medium text-black dark:text-white mt-1">{product.model}</h2>
+                <span className="text-xs text-zinc-500 uppercase tracking-wide">{product.ram_gb} gb</span>
+                <div className="text-xs text-zinc-500 uppercase tracking-wide">{product.color}</div>
+              </div>
               <div className="flex items-center justify-between mt-4">
                 <span className="text-xl font-semibold text-black dark:text-white">${product.price}</span>
                 <button

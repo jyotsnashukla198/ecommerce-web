@@ -19,19 +19,19 @@ export default function ProductsPage(){
     const res = await fetch("/api/adduserproduct", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id:user.id,email:user.email, item:product }),
+      body: JSON.stringify({ user_id:user.user_id, pid:product.pid,quantity:1 }),
     });
   }
 
   function addToCart(product){
     try{
      const existing = cart.find((item)=>{
-       return item?.squid === product?.squid;
+       return item?.pid === product?.pid;
      })
      let updatedCart;
      if(existing){
       updatedCart = cart.map((item)=>{
-        if(item?.squid === product.squid){
+        if(item?.pid === product.pid){
           product.quantity = product?.quantity+1;
           item.quantity = item.quantity+1;
         }
@@ -68,11 +68,10 @@ export default function ProductsPage(){
       setProducts(data);
     }
     async function getProducts(user){
-      const res = await fetch(`/api/cartproducts?id=${user.id}&email=${user.email}`);
+      const res = await fetch(`/api/cartproducts?user_id=${user.user_id}&email=${user.email}`);
       const data = await res.json();
       console.log(data);
-      let products=data.map((user)=>user.item);
-      setCart(products);
+      setCart(data);
   }
     async function checkAuth(){
       const res = await fetch("/api/auth/me");
@@ -103,7 +102,7 @@ export default function ProductsPage(){
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((product) => (
           <div
-            key={product.id}
+            key={product.pid}
             className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-md transition-shadow"
           >
             <div className="p-4">

@@ -8,23 +8,23 @@ export default function CartPage(){
     function updateQuantity(){
 
     }
-    async function removeItemFromDB(squid){
-        await fetch(`/api/cartproducts?id=${user.id}&squid=${squid}`,{
+    async function removeItemFromDB(pid){
+        await fetch(`/api/cartproducts?user_id=${user.user_id}&pid=${pid}`,{
             method: "DELETE",
         })
     }
-    async function updateItemFromDB(squid,quantity){
-        await fetch(`/api/cartproducts?id=${user.id}&squid=${squid}&quantity=${quantity}`,{
+    async function updateItemFromDB(pid,quantity){
+        await fetch(`/api/cartproducts?id=${user.user_id}&pid=${pid}&quantity=${quantity}`,{
             method: "PATCH",
         })
     }
-    async function updateCart(squid,quantity){
+    async function updateCart(pid,quantity){
       if(quantity == 0){
-        removeItem(squid);
+        removeItem(pid);
       }else if(quantity>0){
-        updateItemFromDB(squid,quantity);
+        updateItemFromDB(pid,quantity);
         const updatedCart = cart.map((item)=>{
-            if(item.squid === squid){
+            if(item.pid === pid){
                 item.quantity = quantity;
             }
             return item;
@@ -32,19 +32,18 @@ export default function CartPage(){
         setCart(updatedCart);
       }
     }
-    async function removeItem(id){
-     console.log("removing item:", id);
-     const updatedCart = cart.filter((item)=>item.squid!=id);
+    async function removeItem(pid){
+     console.log("removing item:", pid);
+     const updatedCart = cart.filter((item)=>item.pid!=pid);
      setCart(updatedCart);
-     removeItemFromDB(id);
+     removeItemFromDB(pid);
     }
     useEffect(() => {
     async function getProducts(user){
-        const res = await fetch(`/api/cartproducts?id=${user.id}&email=${user.email}`);
+        const res = await fetch(`/api/cartproducts?user_id=${user.user_id}&email=${user.email}`);
         const data = await res.json();
         console.log(data);
-        let products=data.map((user)=>user.item);
-        setCart(products);
+        setCart(data);
     }
     async function checkAuth(){
         const res = await fetch("/api/auth/me");
@@ -85,16 +84,16 @@ export default function CartPage(){
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button onClick={() => updateCart(item?.squid,item.quantity-1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">−</button>
+                    <button onClick={() => updateCart(item?.pid,item.quantity-1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">−</button>
                     <span className="text-sm font-medium text-black dark:text-white w-5 text-center">{item.quantity}</span>
-                    <button onClick={() =>  updateCart(item?.squid,item.quantity+1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">+</button>
+                    <button onClick={() =>  updateCart(item?.pid,item.quantity+1)} className="w-7 h-7 rounded-full border border-zinc-200 dark:border-zinc-700 text-black dark:text-white flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800">+</button>
                   </div>
 
                   <p className="text-base font-semibold text-black dark:text-white w-20 text-right">
                     ${item.price}
                   </p>
 
-                  <button onClick={() => removeItem(item?.id)} className="text-zinc-400 hover:text-red-500 transition-colors text-sm">
+                  <button onClick={() => removeItem(item?.pid)} className="text-zinc-400 hover:text-red-500 transition-colors text-sm">
                     Remove
                   </button>
                 </div>

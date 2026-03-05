@@ -1,0 +1,8 @@
+FROM node:20-alpine
+
+
+WORKDIR /app
+
+EXPOSE 3000
+
+CMD echo helloooooooooo && npm install && npm run dev

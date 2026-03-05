@@ -1,6 +1,10 @@
 services:
   web:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev 
+    volumes:
+      - .:/app                        # ← mount current folder to /app
     ports:
       - "3000:3000"
     environment:

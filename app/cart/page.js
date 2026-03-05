@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
+import {useAuth} from "@/context/AuthContext";
 
 
 export default function CartPage(){
-    const [user,setUser] = useState(null);
+    // const [user,setUser] = useState(null);
+    const {user,loading} = useAuth();
     const  [cart,setCart] = useState([]);
     function updateQuantity(){
 

@@ -8,16 +8,20 @@ export function AuthProvider({children}){
     const [loading,setLoading] = useState(true);
 
     useEffect(()=>{
-        fetch("/api/auth/me").then((res)=>res.json)
+        fetch("/api/auth/me").then((res)=>res.json())
         .then((data)=>{
           setUser(data.user);
           setLoading(false);
         })
     },[]);
 
+    
     return(
-        <AuthContext.provider value={{user,setUser,loading}}>
+        <AuthContext.Provider value={{user,setUser,loading}}>
             {children}
-        </AuthContext.provider>
+        </AuthContext.Provider>
     )
+}
+export function useAuth(){
+    return useContext(AuthContext);
 }

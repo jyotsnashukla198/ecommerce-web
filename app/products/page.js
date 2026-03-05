@@ -1,14 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import {useRouter} from "next/navigation";
-  
+import {useAuth} from "@/context/AuthContext";
   
 export default function ProductsPage(){
   const [products, setProducts] = useState([]);
   const[cart,setCart] = useState([]);
   const[added,setAdded] = useState({});
-  const [user,setUser] = useState(null);
   const router = useRouter();
+  const {user,loading} = useAuth();
   useEffect(()=>{
     const saved = localStorage.getItem("cart");
     if(saved){
@@ -73,13 +73,13 @@ export default function ProductsPage(){
       console.log(data);
       setCart(data);
   }
-    async function checkAuth(){
-      const res = await fetch("/api/auth/me");
-      const data = await res.json();
-      setUser(data.user);
-      getProducts(data.user);
-    }
-    checkAuth();
+    // async function checkAuth(){
+    //   const res = await fetch("/api/auth/me");
+    //   const data = await res.json();
+    //   setUser(data.user);
+    //   getProducts(data.user);
+    // }
+    // checkAuth();
     fetchProducts();
   }, []);
     return(

@@ -42,22 +42,25 @@ export default function CartPage(){
     }
     useEffect(() => {
     async function getProducts(user){
-        const res = await fetch(`/api/cartproducts?user_id=${user.user_id}&email=${user.email}`);
+        const res = await fetch(`/api/cartproducts?user_id=${user?.user_id}&email=${user?.email}`);
         const data = await res.json();
         console.log(data);
         setCart(data);
     }
-    async function checkAuth(){
-        const res = await fetch("/api/auth/me");
-        const data = await res.json();
-        setUser(data.user);
-        if(data && data.user){
-            getProducts(data.user);
-        }
-      }
+    if(user){
+     getProducts(user);
+    }
+    // async function checkAuth(){
+    //     const res = await fetch("/api/auth/me");
+    //     const data = await res.json();
+    //     setUser(data.user);
+    //     if(data && data.user){
+    //         getProducts(data.user);
+    //     }
+    //   }
 
-      checkAuth();
-    }, []);
+    //   checkAuth();
+    }, [user]);
     const total = cart.reduce((sum, item) => sum + parseInt(item.price), 0);
       return(
        <div className="min-h-screen bg-zinc-50 dark:bg-black px-6 py-12">

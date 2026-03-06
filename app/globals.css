@@ -19,6 +19,21 @@
   }
 }
 @layer utilities {
+  .sorryContainer{
+    display:flex;
+    flex-flow: row wrap;
+    align-items: center;
+  }
+  .sorryContainer h2{
+   align-self:center;
+  }
+  .sorryContainerChild {
+    width:100%;
+  }
+  .sorryContainerChild img{
+    max-width:600px;
+    justify-self:center;
+  }
   .cart-badge {
     text-align: center;
     margin-bottom: 10px;

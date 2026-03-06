@@ -23,6 +23,7 @@
     display:flex;
     flex-flow: row wrap;
     align-items: center;
+    justify-content: center;
   }
   .sorryContainer h2{
    align-self:center;

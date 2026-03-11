@@ -61,7 +61,9 @@ export default function ProductsPage(){
 
     useEffect(() => {
     async function fetchProducts() {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/products", {
+      next: { revalidate: 60 }  // cache for 60 seconds
+    });
       console.log(res);
       const data = await res.json();
       console.log(data);

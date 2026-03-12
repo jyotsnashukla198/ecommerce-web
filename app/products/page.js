@@ -1,10 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {useRouter} from "next/navigation";
 import {useAuth} from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+
+async function fetchProducts() {
+      const res = await fetch("/api/products");
+      console.log(res);
+      const data = await res.json();
+      return data;
+}
   
 export default function ProductsPage(){
-  const [products, setProducts] = useState([]);
   const[cart,setCart] = useState([]);
   const[added,setAdded] = useState({});
   const router = useRouter();
@@ -15,6 +22,16 @@ export default function ProductsPage(){
       setCart(JSON.parse(saved));
     }
   },[]);
+  const {
+    data: products = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey : ["products"],
+    queryFn: fetchProducts,
+    staleTime:1000*60*5,
+  })
   async function addtousercart(product){
     const res = await fetch("/api/adduserproduct", {
       method: "POST",
@@ -23,7 +40,7 @@ export default function ProductsPage(){
     });
   }
 
-  function addToCart(product){
+  async function addToCart(product){
     try{
      const existing = cart.find((item)=>{
        return item?.pid === product?.pid;
@@ -57,16 +74,9 @@ export default function ProductsPage(){
   }
   }
   
-  const totalItems = cart.reduce((sum, item) => sum + item?.quantity, 0);
+  const totalItems = useMemo(() =>cart.reduce((sum, item) => sum + item?.quantity, 0));
 
     useEffect(() => {
-    async function fetchProducts() {
-      const res = await fetch("/api/products");
-      console.log(res);
-      const data = await res.json();
-      console.log(data);
-      setProducts(data);
-    }
     async function getProducts(user){
       const res = await fetch(`/api/cartproducts?user_id=${user.user_id}&email=${user.email}`);
       const data = await res.json();

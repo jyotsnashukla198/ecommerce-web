@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
       >
           <ReduxProvider>
            <AuthProvider>
-            <ServiceWorkerRegistrar></ServiceWorkerRegistrar>
+            {/* <ServiceWorkerRegistrar></ServiceWorkerRegistrar> */}
             {children}
            </AuthProvider>
         </ReduxProvider>

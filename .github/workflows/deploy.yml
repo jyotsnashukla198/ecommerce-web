@@ -36,67 +36,41 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      - name: Deploy to EC2 via SSM (all private-ec2 tagged instances)
+      - name: Update Launch Template with new user data
         run: |
-          # Discover all EC2 instances with tag type=private-ec2
-          INSTANCE_IDS=$(aws ec2 describe-instances \
-            --filters "Name=tag:type,Values=private-ec2" "Name=instance-state-name,Values=running" \
-            --query "Reservations[*].Instances[*].InstanceId" \
-            --region ${{ secrets.AWS_REGION }} \
-            --output text | tr '\t' ' ')
+          USER_DATA=$(cat <<'EOF'
+          #!/bin/bash
+          set -e
+          sudo dnf install git -y
+          sudo dnf install docker -y
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo usermod -aG docker ec2-user
+          docker --version
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+          docker pull ${{ secrets.ECR_REGISTRY }}/jyotsna/ecommerce:latest
+          docker run -d --name ecommerce-web -p 3000:3000 -e DATABASE_URL=${{ secrets.DATABASE_URL }} -e JWT_SECRET=${{ secrets.JWT_SECRET }} ${{ secrets.ECR_REGISTRY }}/jyotsna/ecommerce:latest
+          EOF
+          )
 
-          if [ -z "$INSTANCE_IDS" ]; then
-            echo "No running EC2 instances found with tag type=private-ec2"
-            exit 1
-          fi
+          ENCODED_USER_DATA=$(echo "$USER_DATA" | base64 -w 0)
 
-          echo "Target instances: $INSTANCE_IDS"
+          aws ec2 create-launch-template-version \
+            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
+            --source-version '$Latest' \
+            --launch-template-data "{\"UserData\":\"$ENCODED_USER_DATA\"}" \
+            --region ${{ secrets.AWS_REGION }}
 
-          # Send SSM command to all instances using tag-based targeting
-          COMMAND_ID=$(aws ssm send-command \
-            --targets "Key=tag:type,Values=private-ec2" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy ecommerce-web" \
-            --parameters '{"commands":[
-              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "docker pull ${{ secrets.ECR_REGISTRY }}/jyotsna/ecommerce:latest",
-              "docker ps -q --filter publish=3000 | xargs -r docker rm -f || true",
-              "docker rm -f ecommerce-web || true",
-              "docker run -d --name ecommerce-web -p 3000:3000 -e DATABASE_URL=${{ secrets.DATABASE_URL }} -e JWT_SECRET=${{ secrets.JWT_SECRET }} ${{ secrets.ECR_REGISTRY }}/jyotsna/ecommerce:latest"
-            ]}' \
-            --timeout-seconds 300 \
-            --region ${{ secrets.AWS_REGION }} \
-            --query "Command.CommandId" \
-            --output text)
+          aws ec2 modify-launch-template \
+            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
+            --default-version '$Latest' \
+            --region ${{ secrets.AWS_REGION }}
 
-          echo "SSM Command ID: $COMMAND_ID"
+      - name: Refresh Auto Scaling Group
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name ${{ secrets.ASG_NAME }} \
+            --preferences '{"MinHealthyPercentage": 50}' \
+            --region ${{ secrets.AWS_REGION }}
 
-          # Poll until all invocations complete
-          FAILED=0
-          for INSTANCE_ID in $INSTANCE_IDS; do
-            echo "Waiting for deployment on $INSTANCE_ID..."
-            aws ssm wait command-executed \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --region ${{ secrets.AWS_REGION }} || true
-
-            STATUS=$(aws ssm get-command-invocation \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --region ${{ secrets.AWS_REGION }} \
-              --query "Status" \
-              --output text)
-
-            echo "Instance $INSTANCE_ID deployment status: $STATUS"
-            if [ "$STATUS" != "Success" ]; then
-              echo "Deployment failed on $INSTANCE_ID!"
-              FAILED=1
-            fi
-          done
-
-          if [ "$FAILED" -eq 1 ]; then
-            echo "One or more deployments failed!"
-            exit 1
-          fi
-
-          echo "All instances deployed successfully."
+          echo "Instance refresh started. New instances will pull the latest Docker image on launch."

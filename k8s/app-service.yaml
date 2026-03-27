@@ -3,11 +3,15 @@ kind: Service
 metadata:
   name: ecommerce-web-service
   namespace: ecommerce
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:ap-south-1:188382150773:certificate/e0b565d6-d164-4753-a6a5-87bd6c8b40ea
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
 spec:
   selector:
     app: ecommerce-web
   ports:
     - protocol: TCP
-      port: 80
+      port: 443
       targetPort: 3000
   type: LoadBalancer

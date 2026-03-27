@@ -55,7 +55,7 @@ export default function SorryPage(){
 
     return(
         <div className="sorryContainer">
-            <h2>We are sorry to go! Please visit our website.Hello
+            <h2>We are sorry to go! Please visit our website.Hello welcome.
 
             </h2>
             <div className="sorryContainerChild">

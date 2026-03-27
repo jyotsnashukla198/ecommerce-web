@@ -35,42 +35,13 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: Update Launch Template with new user data
+      
+      - name: Deploy to EKS
         run: |
-          USER_DATA=$(cat <<'EOF'
-          #!/bin/bash
-          set -e
-          sudo dnf install git -y
-          sudo dnf install docker -y
-          sudo systemctl start docker
-          sudo systemctl enable docker
-          sudo usermod -aG docker ec2-user
-          docker --version
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-          docker pull ${{ secrets.ECR_REGISTRY }}/jyotsna/ecommerce:latest
-          docker run -d --name ecommerce-web -p 3000:3000 -e DATABASE_URL=${{ secrets.DATABASE_URL }} -e JWT_SECRET=${{ secrets.JWT_SECRET }} ${{ secrets.ECR_REGISTRY }}/jyotsna/ecommerce:latest
-          EOF
-          )
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ecommerce-cluster
+          kubectl set image deployment/ecommerce-web \
+            ecommerce-web=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -n ecommerce
+          kubectl rollout status deployment/ecommerce-web -n ecommerce
 
-          ENCODED_USER_DATA=$(echo "$USER_DATA" | base64 -w 0)
-
-          aws ec2 create-launch-template-version \
-            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
-            --source-version '$Latest' \
-            --launch-template-data "{\"UserData\":\"$ENCODED_USER_DATA\"}" \
-            --region ${{ secrets.AWS_REGION }}
-
-          aws ec2 modify-launch-template \
-            --launch-template-name ${{ secrets.LAUNCH_TEMPLATE_NAME }} \
-            --default-version '$Latest' \
-            --region ${{ secrets.AWS_REGION }}
-
-      - name: Refresh Auto Scaling Group
-        run: |
-          aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name ${{ secrets.ASG_NAME }} \
-            --preferences '{"MinHealthyPercentage": 50}' \
-            --region ${{ secrets.AWS_REGION }}
-
-          echo "Instance refresh started. New instances will pull the latest Docker image on launch."
+     

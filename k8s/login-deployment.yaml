@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ecommerce-web
+  name: login-service
   namespace: ecommerce
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: ecommerce-web
+      app: login-service
   template:
     metadata:
       labels:
-        app: ecommerce-web
+        app: login-service
     spec:
       containers:
-        - name: ecommerce-web
+        - name: login-service
           image: 188382150773.dkr.ecr.ap-south-1.amazonaws.com/jyotsna/ecommerce:latest
           ports:
             - containerPort: 3000
@@ -39,7 +39,7 @@ spec:
           resources:
             requests:
               cpu: 250m
-              memory: 512Mi
+              memory: 256Mi
             limits:
-              cpu: 1000m
-              memory: 1Gi
+              cpu: 500m
+              memory: 512Mi
